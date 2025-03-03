@@ -1,3 +1,9 @@
+# Haxe GameJolt Client by Mrzk(X)
+
+For convenience, I created my own repository for additions/corrections/reconfigurations.
+
+Thanks GamerPablito for this library!
+
 # Haxe GameJolt Client
 
 Heya there! GamerPablito here!

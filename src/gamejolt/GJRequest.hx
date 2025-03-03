@@ -8,39 +8,6 @@ using Lambda;
 using StringTools;
 
 /**
- * The GameJolt API Class where the global values for `GJRequest` instances are setted up.
- * @see For more info about the GameJolt API and calls: https://gamejolt.com/game-api
- */
-class GameJolt {
-	/**
-	 * Your Game ID goes here.
-	 */
-	public static var gameID:Int = 0;
-
-	/**
-	 * Your Game Private Key goes here.
-	 */
-	public static var gameKey:String = "";
-
-	/**
-	 * If `true`, `GJRequest` instances will use `Md5` encryptation for request calls.
-	 * Otherwise, they'll use `Sha1` encryptation instead.
-	 */
-	public static var usingMd5:Bool = true;
-
-	/**
-	 * The Username of the user.
-	 */
-	public static var userName:String = "";
-
-	/**
-	 * The Game Token of the user. \
-	 * NOTE: If you leave this `null`, only the functions related to Scores are gonna be functional for the user. \
-	 */
-	public static var userToken:String = "";
-}
-
-/**
  * The general GameJolt class you can be able to make calls to its API from.
  * @see For more info about how to formulate calls correctly: https://github.com/GamerPablito/HaxeGJClient
  */
@@ -67,24 +34,34 @@ class GJRequest {
 
 	/**
 	 * An event dispatcher you can set up to be called by `send()` when the current execution ends successfully.
+	 * 
+	 * @param `Response` - This is how GameJolt API responses are formatted like
+	 * @return And these will working in client (if operation completed).
 	 */
-	public dynamic function onComplete(res:Response) {}
+	public var onComplete:Response->Void;
 
 	/**
 	 * An event dispatcher you can set up to be called by `send()` while the current execution is progressing.
+	 * 
+	 * @param Float - How much bytes is loaded.
+	 * @param Float - How much bytes is total.
+	 * @return And these will working when client `send()` something.
 	 */
-	public dynamic function onProgress(progress:Float, total:Float) {}
+	public var onProgress:Float->Float->Void;
 
 	/**
 	 * An event dispatcher you can set up to be called by `send()` when the current execution ends with an error of any kind.
+	 * 
+	 * @param String - Error Message.
+	 * @return When client throw a error, this will working.
 	 */
-	public dynamic function onError(error:String) {}
+	public var onError:String->Void;
 
 	public function new(Call:RequestType)
 		call = Call;
 
 	function get_url():String
-		return sign('https://api.gamejolt.com/api/game/v1_2${parseType(call)}');
+		return signature('https://api.gamejolt.com/api/game/v1_2${parseType(call)}');
 
 	function set_call(value:RequestType):RequestType {
 		if (executing)
@@ -133,6 +110,7 @@ class GJRequest {
 		if (res.users != null)
 			res.users.iter(u -> u.avatar_url = '${u.avatar_url.substring(0, 32)}1000${u.avatar_url.substr(34)}'.replace(".jpg", ".png")
 				.replace(".webp", ".png"));
+
 		if (res.trophies != null)
 			res.trophies.iter(function(t) {
 				var newUrl:String = "";
@@ -151,8 +129,10 @@ class GJRequest {
 				}
 				t.image_url = newUrl;
 			});
+
 		if (res.responses != null)
 			res.responses.iter(res2 -> res2 = formatImages(res2));
+
 		return res;
 	}
 
@@ -168,52 +148,48 @@ class GJRequest {
 		var params:Array<{name:String, value:String}> = [];
 
 		switch (request) {
-			case BATCH(parallel, breakOnError, requests):
-				command = "batch";
-				params.push({name: "parallel", value: '$parallel'});
-				params.push({name: "break_on_error", value: '$breakOnError'});
-				for (req in requests)
-					params.push({name: "requests[]", value: parseType(req, true)});
-			case DATA_FETCH(key, fromUser):
+			// DATA //
+
+			case DataFetch(key, fromUser):
 				command = "data-store";
 				params.push({name: "key", value: key.urlEncode()});
 				if (fromUser) {
-					params.push({name: "username", value: GameJolt.userName});
-					params.push({name: "user_token", value: GameJolt.userToken});
+					params.push({name: "username", value: GJApi.userName});
+					params.push({name: "user_token", value: GJApi.userToken});
 				}
-			case DATA_GETKEYS(fromUser, pattern):
+			case DataGetKeys(fromUser, pattern):
 				command = "data-store";
 				action = "get-keys";
 				if (pattern != null && pattern != "")
 					params.push({name: "pattern", value: pattern.urlEncode()});
 				if (fromUser) {
-					params.push({name: "username", value: GameJolt.userName});
-					params.push({name: "user_token", value: GameJolt.userToken});
+					params.push({name: "username", value: GJApi.userName});
+					params.push({name: "user_token", value: GJApi.userToken});
 				}
-			case DATA_REMOVE(key, fromUser):
+			case DataRemove(key, fromUser):
 				command = "data-store";
 				action = "remove";
 				params.push({name: "key", value: key.urlEncode()});
 				if (fromUser) {
-					params.push({name: "username", value: GameJolt.userName});
-					params.push({name: "user_token", value: GameJolt.userToken});
+					params.push({name: "username", value: GJApi.userName});
+					params.push({name: "user_token", value: GJApi.userToken});
 				}
-			case DATA_SET(key, data, toUser):
+			case DataSet(key, data, toUser):
 				command = "data-store";
 				action = "set";
 				params.push({name: "key", value: key.urlEncode()});
 				params.push({name: "data", value: data.urlEncode()});
 				if (toUser) {
-					params.push({name: "username", value: GameJolt.userName});
-					params.push({name: "user_token", value: GameJolt.userToken});
+					params.push({name: "username", value: GJApi.userName});
+					params.push({name: "user_token", value: GJApi.userToken});
 				}
-			case DATA_UPDATE(key, operation, toUser):
+			case DataUpdate(key, operation, toUser):
 				command = "data-store";
 				action = "update";
 				params.push({name: "key", value: key.urlEncode()});
 				if (toUser) {
-					params.push({name: "username", value: GameJolt.userName});
-					params.push({name: "user_token", value: GameJolt.userToken});
+					params.push({name: "username", value: GJApi.userName});
+					params.push({name: "user_token", value: GJApi.userToken});
 				}
 				switch (operation) {
 					case Add(n):
@@ -235,46 +211,49 @@ class GJRequest {
 						params.push({name: 'operation', value: 'prepend'});
 						params.push({name: 'value', value: t.urlEncode()});
 				}
-			case FRIENDS:
-				command = "friends";
-				params.push({name: "username", value: GameJolt.userName});
-				params.push({name: "user_token", value: GameJolt.userToken});
-			case TIME:
-				command = "time";
-			case USER_AUTH:
+
+			// USER //
+
+			case UserAuth:
 				command = "users";
 				action = "auth";
-				params.push({name: "username", value: GameJolt.userName});
-				params.push({name: "user_token", value: GameJolt.userToken});
-			case USER_FETCH(userOrIDList):
+				params.push({name: "username", value: GJApi.userName});
+				params.push({name: "user_token", value: GJApi.userToken});
+			case UserFetch(userOrIDList):
 				command = "users";
 				if (userOrIDList != [])
 					params.push({
 						name: userOrIDList.exists(userOrID -> Std.parseInt(userOrID) == null) ? "username" : "user_id",
 						value: userOrIDList.join(",").urlEncode()
 					});
-			case SESSION_OPEN:
+
+			// SESSION //
+
+			case SessionOpen:
 				command = "sessions";
 				action = "open";
-				params.push({name: "username", value: GameJolt.userName});
-				params.push({name: "user_token", value: GameJolt.userToken});
-			case SESSION_PING(active):
+				params.push({name: "username", value: GJApi.userName});
+				params.push({name: "user_token", value: GJApi.userToken});
+			case SessionPing(active):
 				command = "sessions";
 				action = "ping";
 				params.push({name: "status", value: active ? "active" : "idle"});
-				params.push({name: "username", value: GameJolt.userName});
-				params.push({name: "user_token", value: GameJolt.userToken});
-			case SESSION_CHECK:
+				params.push({name: "username", value: GJApi.userName});
+				params.push({name: "user_token", value: GJApi.userToken});
+			case SessionCheck:
 				command = "sessions";
 				action = "check";
-				params.push({name: "username", value: GameJolt.userName});
-				params.push({name: "user_token", value: GameJolt.userToken});
-			case SESSION_CLOSE:
+				params.push({name: "username", value: GJApi.userName});
+				params.push({name: "user_token", value: GJApi.userToken});
+			case SessionClose:
 				command = "sessions";
 				action = "close";
-				params.push({name: "username", value: GameJolt.userName});
-				params.push({name: "user_token", value: GameJolt.userToken});
-			case SCORES_ADD(score, sort, extra_data, table_id):
+				params.push({name: "username", value: GJApi.userName});
+				params.push({name: "user_token", value: GJApi.userToken});
+
+			// SCORES //
+
+			case ScoresAdd(score, sort, extra_data, table_id):
 				command = "scores";
 				action = "add";
 				params.push({name: "score", value: score});
@@ -283,18 +262,18 @@ class GJRequest {
 					params.push({name: "extra_data", value: extra_data.urlEncode()});
 				if (table_id != null)
 					params.push({name: "table_id", value: '$table_id'});
-				if (GameJolt.userToken != "") {
-					params.push({name: "username", value: GameJolt.userName});
-					params.push({name: "user_token", value: GameJolt.userToken});
+				if (GJApi.userToken != "") {
+					params.push({name: "username", value: GJApi.userName});
+					params.push({name: "user_token", value: GJApi.userToken});
 				} else
-					params.push({name: "guest", value: GameJolt.userName});
-			case SCORES_GETRANK(sort, table_id):
+					params.push({name: "guest", value: GJApi.userName});
+			case ScoresGetRank(sort, table_id):
 				command = "scores";
 				action = "get-rank";
 				params.push({name: "sort", value: '$sort'});
 				if (table_id != null)
 					params.push({name: "table_id", value: '$table_id'});
-			case SCORES_FETCH(fromUser, table_id, limit, betterThan):
+			case ScoresFetch(fromUser, table_id, limit, betterThan):
 				command = "scores";
 				if (table_id != null)
 					params.push({name: "table_id", value: '$table_id'});
@@ -303,40 +282,59 @@ class GJRequest {
 				if (betterThan != null)
 					params.push({name: betterThan < 0 ? "worse_than" : "better_than", value: '${Math.abs(betterThan)}'});
 				if (fromUser) {
-					if (GameJolt.userToken != "") {
-						params.push({name: "username", value: GameJolt.userName});
-						params.push({name: "user_token", value: GameJolt.userToken});
+					if (GJApi.userToken != "") {
+						params.push({name: "username", value: GJApi.userName});
+						params.push({name: "user_token", value: GJApi.userToken});
 					} else
-						params.push({name: "guest", value: GameJolt.userName});
+						params.push({name: "guest", value: GJApi.userName});
 				}
-			case SCORES_TABLES:
+			case ScoresTables:
 				command = "scores";
 				action = "tables";
-			case TROPHIES_FETCH(achieved, trophy_id):
+
+			// TROPHIES //
+
+			case TrophiesFetch(achieved, trophy_id):
 				command = "trophies";
 				if (achieved != null)
 					params.push({name: "achieved", value: '$achieved'});
 				if (trophy_id != null)
 					params.push({name: "trophy_id", value: '$trophy_id'});
-				params.push({name: "username", value: GameJolt.userName});
-				params.push({name: "user_token", value: GameJolt.userToken});
-			case TROPHIES_ADD(trophy_id):
+				params.push({name: "username", value: GJApi.userName});
+				params.push({name: "user_token", value: GJApi.userToken});
+			case TrophiesAdd(trophy_id):
 				command = "trophies";
 				action = "add-achieved";
 				params.push({name: "trophy_id", value: '$trophy_id'});
-				params.push({name: "username", value: GameJolt.userName});
-				params.push({name: "user_token", value: GameJolt.userToken});
-			case TROPHIES_REMOVE(trophy_id):
+				params.push({name: "username", value: GJApi.userName});
+				params.push({name: "user_token", value: GJApi.userToken});
+			case TrophiesRemove(trophy_id):
 				command = "trophies";
 				action = "remove-achieved";
 				params.push({name: "trophy_id", value: '$trophy_id'});
-				params.push({name: "username", value: GameJolt.userName});
-				params.push({name: "user_token", value: GameJolt.userToken});
+				params.push({name: "username", value: GJApi.userName});
+				params.push({name: "user_token", value: GJApi.userToken});
+
+			// OTHERS //
+
+			case Batch(parallel, breakOnError, requests):
+				command = "batch";
+				params.push({name: "parallel", value: '$parallel'});
+				params.push({name: "break_on_error", value: '$breakOnError'});
+				for (req in requests)
+					params.push({name: "requests[]", value: parseType(req, true)});
+			case Friends:
+				command = "friends";
+				params.push({name: "username", value: GJApi.userName});
+				params.push({name: "user_token", value: GJApi.userToken});
+			case Time:
+				command = "time";
 		}
 
-		var urlSection:String = '/$command${action != "" ? '/$action' : ""}?game_id=${GameJolt.gameID}${[for (p in params) '&${p.name}=${p.value}'].join("")}';
+		var urlSection:String = '/$command${action != "" ? '/$action' : ""}?game_id=${GJApi.gameID}${[for (p in params) '&${p.name}=${p.value}'].join("")}';
 		if (signed)
-			urlSection = sign(urlSection).urlEncode();
+			urlSection = signature(urlSection).urlEncode();
+
 		return urlSection;
 	}
 
@@ -345,8 +343,8 @@ class GJRequest {
 	 * @param daUrl The old URL piece.
 	 * @return The new URL piece.
 	 */
-	function sign(daUrl:String):String {
-		var urlToEncode:String = daUrl + GameJolt.gameKey;
-		return '$daUrl&signature=${GameJolt.usingMd5 ? haxe.crypto.Md5.encode(urlToEncode) : haxe.crypto.Sha1.encode(urlToEncode)}';
+	function signature(daUrl:String):String {
+		var urlToEncode:String = daUrl + GJApi.gameKey;
+		return '$daUrl&signature=${GJApi.usingMd5 ? haxe.crypto.Md5.encode(urlToEncode) : haxe.crypto.Sha1.encode(urlToEncode)}';
 	}
 }

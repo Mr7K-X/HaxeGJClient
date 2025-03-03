@@ -16,8 +16,8 @@
         "GamerPablito"
     ],
     "dependencies": {
-        "lime": "",
-        "openfl": ""
+        "lime": "8.2.2",
+        "openfl": "9.4.1"
     },
     "main": "GameJolt"
 }

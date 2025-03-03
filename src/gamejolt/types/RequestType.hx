@@ -4,25 +4,36 @@ package gamejolt.types;
  * An enum of every single command currently available to request to GameJolt API.
  */
 enum RequestType {
-	BATCH(parallel:Bool, breakOnError:Bool, requests:Array<RequestType>);
-	DATA_FETCH(key:String, fromUser:Bool);
-	DATA_GETKEYS(fromUser:Bool, ?pattern:String);
-	DATA_REMOVE(key:String, fromUser:Bool);
-	DATA_SET(key:String, data:String, toUser:Bool);
-	DATA_UPDATE(key:String, operation:DataUpdateType, toUser:Bool);
-	FRIENDS;
-	TIME;
-	USER_AUTH;
-	USER_FETCH(userOrIDList:Array<String>);
-	SESSION_OPEN;
-	SESSION_PING(active:Bool);
-	SESSION_CHECK;
-	SESSION_CLOSE;
-	SCORES_ADD(score:String, sort:Int, ?extra_data:String, ?table_id:Int);
-	SCORES_GETRANK(sort:Int, ?table_id:Int);
-	SCORES_FETCH(fromUser:Bool, ?table_id:Int, ?limit:Int, ?betterThan:Int);
-	SCORES_TABLES;
-	TROPHIES_FETCH(?achieved:Bool, ?trophy_id:Int);
-	TROPHIES_ADD(trophy_id:Int);
-	TROPHIES_REMOVE(trophy_id:Int);
+	// DATA
+	DataFetch(key:String, fromUser:Bool);
+	DataGetKeys(fromUser:Bool, ?pattern:String);
+	DataRemove(key:String, fromUser:Bool);
+	DataSet(key:String, data:String, toUser:Bool);
+	DataUpdate(key:String, operation:DataUpdateType, toUser:Bool);
+
+	// USER
+	UserAuth;
+	UserFetch(userOrIDList:Array<String>);
+
+	// SESSION
+	SessionOpen;
+	SessionPing(active:Bool);
+	SessionCheck;
+	SessionClose;
+
+	// SCORES
+	ScoresAdd(score:String, sort:Int, ?extra_data:String, ?table_id:Int);
+	ScoresGetRank(sort:Int, ?table_id:Int);
+	ScoresFetch(fromUser:Bool, ?table_id:Int, ?limit:Int, ?betterThan:Int);
+	ScoresTables;
+
+	// TROPHIES
+	TrophiesFetch(?achieved:Bool, ?trophy_id:Int);
+	TrophiesAdd(trophy_id:Int);
+	TrophiesRemove(trophy_id:Int);
+
+	// OTHERS
+	Batch(parallel:Bool, breakOnError:Bool, requests:Array<RequestType>);
+	Friends;
+	Time;
 }
