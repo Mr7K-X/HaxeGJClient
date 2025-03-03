@@ -1,10 +1,11 @@
-package src.gamejolt;
+package gamejolt;
 
 /**
  * The GameJolt API Class where the global values for `GJRequest` instances are setted up.
  * @see For more info about the GameJolt API and calls: https://gamejolt.com/game-api
  */
-class GJApi {
+class GJApi
+{
 	/**
 	 * Your Game ID goes here.
 	 */
