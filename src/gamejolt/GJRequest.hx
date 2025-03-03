@@ -11,7 +11,8 @@ using StringTools;
  * The general GameJolt class you can be able to make calls to its API from.
  * @see For more info about how to formulate calls correctly: https://github.com/GamerPablito/HaxeGJClient
  */
-class GJRequest {
+class GJRequest
+{
 	/**
 	 * The actual URL created by the parsing of the current `call`.
 	 */
@@ -34,7 +35,7 @@ class GJRequest {
 
 	/**
 	 * An event dispatcher you can set up to be called by `send()` when the current execution ends successfully.
-	 * 
+	 *
 	 * @param `Response` - This is how GameJolt API responses are formatted like
 	 * @return And these will working in client (if operation completed).
 	 */
@@ -42,7 +43,7 @@ class GJRequest {
 
 	/**
 	 * An event dispatcher you can set up to be called by `send()` while the current execution is progressing.
-	 * 
+	 *
 	 * @param Float - How much bytes is loaded.
 	 * @param Float - How much bytes is total.
 	 * @return And these will working when client `send()` something.
@@ -51,7 +52,7 @@ class GJRequest {
 
 	/**
 	 * An event dispatcher you can set up to be called by `send()` when the current execution ends with an error of any kind.
-	 * 
+	 *
 	 * @param String - Error Message.
 	 * @return When client throw a error, this will working.
 	 */
@@ -63,7 +64,8 @@ class GJRequest {
 	function get_url():String
 		return signature('https://api.gamejolt.com/api/game/v1_2${parseType(call)}');
 
-	function set_call(value:RequestType):RequestType {
+	function set_call(value:RequestType):RequestType
+	{
 		if (executing)
 			return call;
 		return call = value;
@@ -73,29 +75,41 @@ class GJRequest {
 	 * Sends the current `call` to the GameJolt API to return a `Response` from it, if `executing == false`.
 	 * @return A `Future` instance that returns a `Response` from the GameJolt API while saving it in `lastResponse`.
 	 */
-	public function send() {
+	public function send()
+	{
 		if (executing)
 			return;
 		executing = true;
 
 		var loader = new openfl.net.URLLoader();
-		loader.addEventListener(Event.COMPLETE, function(complete) {
+		loader.addEventListener(Event.COMPLETE, (complete) ->
+		{
 			lastResponse = formatImages(cast haxe.Json.parse(loader.data).response);
 			if (lastResponse.message != null)
-				onError('Response Error: ${lastResponse.message}');
-			else
-				onComplete(lastResponse);
+				if (onError != null)
+					onError('Response Error: ${lastResponse.message}');
+				else if (onComplete != null)
+					onComplete(lastResponse);
+
 			executing = false;
 		});
-		loader.addEventListener(ProgressEvent.PROGRESS, progress -> onProgress(progress.bytesLoaded, progress.bytesTotal));
-		loader.addEventListener(IOErrorEvent.IO_ERROR, function(ioError) {
+		loader.addEventListener(ProgressEvent.PROGRESS, progress ->
+		{
+			if (onProgress != null)
+				onProgress(progress.bytesLoaded, progress.bytesTotal);
+		});
+		loader.addEventListener(IOErrorEvent.IO_ERROR, (ioError) ->
+		{
 			lastResponse = {success: false, message: 'IO Error: ${ioError.text}'}
-			onError(lastResponse.message);
+			if (onError != null)
+				onError(lastResponse.message);
 			executing = false;
 		});
-		loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, securityError -> {
+		loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, securityError ->
+		{
 			lastResponse = {success: false, message: 'Security Error: ${securityError.text}'}
-			onError(lastResponse.message);
+			if (onError != null)
+				onError(lastResponse.message);
 			executing = false;
 		});
 		loader.load(new openfl.net.URLRequest(url));
@@ -106,19 +120,23 @@ class GJRequest {
 	 * @param oldRes The `Response` to be modified.
 	 * @return A new `Response` with every Image URL modified for a better resolution when requested.
 	 */
-	function formatImages(res:Response):Response {
+	function formatImages(res:Response):Response
+	{
 		if (res.users != null)
 			res.users.iter(u -> u.avatar_url = '${u.avatar_url.substring(0, 32)}1000${u.avatar_url.substr(34)}'.replace(".jpg", ".png")
 				.replace(".webp", ".png"));
 
 		if (res.trophies != null)
-			res.trophies.iter(function(t) {
+			res.trophies.iter((t) ->
+			{
 				var newUrl:String = "";
 				if (t.image_url.startsWith('https://m.'))
 					newUrl = '${t.image_url.substring(0, 37)}1000${t.image_url.substr(40)}'.replace(".jpg", ".png").replace(".webp", ".png");
-				else {
+				else
+				{
 					newUrl = "https://s.gjcdn.net/assets/";
-					newUrl += switch (t.image_url.substring(24).replace(".jpg", "").replace(".webp", "")) {
+					newUrl += switch (t.image_url.substring(24).replace(".jpg", "").replace(".webp", ""))
+					{
 						case "trophy-bronze-1": "9c2c91d0";
 						case "trophy-silver-1": "b46e352e";
 						case "trophy-gold-1": "363ce2dc";
@@ -142,18 +160,21 @@ class GJRequest {
 	 * @param signed Whether to sign this conversion or not.
 	 * @return The new URL piece.
 	 */
-	function parseType(request:RequestType, signed:Bool = false):String {
+	function parseType(request:RequestType, signed:Bool = false):String
+	{
 		var command:String = "";
 		var action:String = "";
 		var params:Array<{name:String, value:String}> = [];
 
-		switch (request) {
+		switch (request)
+		{
 			// DATA //
 
 			case DataFetch(key, fromUser):
 				command = "data-store";
 				params.push({name: "key", value: key.urlEncode()});
-				if (fromUser) {
+				if (fromUser)
+				{
 					params.push({name: "username", value: GJApi.userName});
 					params.push({name: "user_token", value: GJApi.userToken});
 				}
@@ -162,7 +183,8 @@ class GJRequest {
 				action = "get-keys";
 				if (pattern != null && pattern != "")
 					params.push({name: "pattern", value: pattern.urlEncode()});
-				if (fromUser) {
+				if (fromUser)
+				{
 					params.push({name: "username", value: GJApi.userName});
 					params.push({name: "user_token", value: GJApi.userToken});
 				}
@@ -170,7 +192,8 @@ class GJRequest {
 				command = "data-store";
 				action = "remove";
 				params.push({name: "key", value: key.urlEncode()});
-				if (fromUser) {
+				if (fromUser)
+				{
 					params.push({name: "username", value: GJApi.userName});
 					params.push({name: "user_token", value: GJApi.userToken});
 				}
@@ -179,7 +202,8 @@ class GJRequest {
 				action = "set";
 				params.push({name: "key", value: key.urlEncode()});
 				params.push({name: "data", value: data.urlEncode()});
-				if (toUser) {
+				if (toUser)
+				{
 					params.push({name: "username", value: GJApi.userName});
 					params.push({name: "user_token", value: GJApi.userToken});
 				}
@@ -187,11 +211,13 @@ class GJRequest {
 				command = "data-store";
 				action = "update";
 				params.push({name: "key", value: key.urlEncode()});
-				if (toUser) {
+				if (toUser)
+				{
 					params.push({name: "username", value: GJApi.userName});
 					params.push({name: "user_token", value: GJApi.userToken});
 				}
-				switch (operation) {
+				switch (operation)
+				{
 					case Add(n):
 						params.push({name: 'operation', value: 'add'});
 						params.push({name: 'value', value: '$n'});
@@ -262,10 +288,12 @@ class GJRequest {
 					params.push({name: "extra_data", value: extra_data.urlEncode()});
 				if (table_id != null)
 					params.push({name: "table_id", value: '$table_id'});
-				if (GJApi.userToken != "") {
+				if (GJApi.userToken != "")
+				{
 					params.push({name: "username", value: GJApi.userName});
 					params.push({name: "user_token", value: GJApi.userToken});
-				} else
+				}
+				else
 					params.push({name: "guest", value: GJApi.userName});
 			case ScoresGetRank(sort, table_id):
 				command = "scores";
@@ -281,11 +309,14 @@ class GJRequest {
 					params.push({name: "limit", value: '$limit'});
 				if (betterThan != null)
 					params.push({name: betterThan < 0 ? "worse_than" : "better_than", value: '${Math.abs(betterThan)}'});
-				if (fromUser) {
-					if (GJApi.userToken != "") {
+				if (fromUser)
+				{
+					if (GJApi.userToken != "")
+					{
 						params.push({name: "username", value: GJApi.userName});
 						params.push({name: "user_token", value: GJApi.userToken});
-					} else
+					}
+					else
 						params.push({name: "guest", value: GJApi.userName});
 				}
 			case ScoresTables:
@@ -343,7 +374,8 @@ class GJRequest {
 	 * @param daUrl The old URL piece.
 	 * @return The new URL piece.
 	 */
-	function signature(daUrl:String):String {
+	function signature(daUrl:String):String
+	{
 		var urlToEncode:String = daUrl + GJApi.gameKey;
 		return '$daUrl&signature=${GJApi.usingMd5 ? haxe.crypto.Md5.encode(urlToEncode) : haxe.crypto.Sha1.encode(urlToEncode)}';
 	}
